@@ -1,4 +1,7 @@
 loguru
 redis == 4.5.5
+
 parsel
 playwright
+
+asyncio
