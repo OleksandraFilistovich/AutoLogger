@@ -4,4 +4,9 @@ redis == 4.5.5
 parsel
 playwright
 
-asyncio
+mailtm
+
+2captcha-python
+#playwright-recaptcha
+#ffprobe
+#ffmpeg

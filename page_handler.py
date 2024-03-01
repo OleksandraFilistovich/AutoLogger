@@ -1,13 +1,14 @@
 import time
 import string
-import asyncio
+
 from mailtm import Email
 from random import choice
 
 from parsel import Selector
 from playwright.sync_api import sync_playwright, Page
-#from playwright.async_api import Page
 
+#from playwright_recaptcha import recaptchav2
+from twocaptcha import TwoCaptcha
 
 
 URL_SIGNUP = "https://opencorporates.com/"
@@ -22,11 +23,13 @@ class PageHandler:
     def go_to_signup(self) -> None:
         print('page go')
         self.browser_page.goto(URL_SIGNUP, wait_until="load", timeout=60000)
+        self.browser_page.screenshot(path="go_to.png", full_page=True)
         print('button search')
 
         button = self.browser_page.get_by_role('link')
         button.get_by_text('Login').click()
 
+        self.browser_page.screenshot(path="go_to.png", full_page=True)
         button = self.browser_page.get_by_role('link')
         button.get_by_text('Create an account').click()
 
@@ -67,9 +70,53 @@ class PageHandler:
             print('sleep')
             check.check()
         """
+   
+        self.browser_page.screenshot(path="info.png")
+    
+    def recaptcha(self) -> None:
+        time.sleep(5)
+        html_content = self.browser_page.content()
+        selector = Selector(text=html_content)
+
+        xpath = '//div[@class="g-recaptcha"]/@data-sitekey'
+        site_key = '6LfNR90SAAAAAMjuou-Bhh1HFLoa4BpoZttxz4RL'
+        print(site_key)
+        
+        solver = TwoCaptcha('f35d8c9b68dd7ae711093739a6bcd676')
+        result = solver.recaptcha(sitekey=site_key,
+                                  url='https://opencorporates.com/users/sign_up')
+        print(result['code'])
+
+
+
+
+        captcha_response = self.browser_page.query_selector('.g-recaptcha-response')
+        
+        self.browser_page.eval_on_selector('.g-recaptcha-response',
+                                           f'node => node.value = {result["code"]}')
+        time.sleep(10)
+        self.browser_page.screenshot(path="captcha.png")
+
+        """
+        self.browser_page.mouse.wheel(0, 15000)
+
+        self.browser_page.locator('[value="Register new account"]').click()
+        button = self.browser_page.query_selector('.btn-primary')
+        button.click()
+
+        xpath = '//label[@id="recaptcha-anchor-label"]/text()'
+        cap = selector.xpath(xpath).get()
+        print(cap)
+        
+        self.browser_page.query_selector('name=commit').click()
+        time.sleep(5)
+        self.browser_page.screenshot(path="captcha.png")
+        with recaptchav2.SyncSolver(self.browser_page) as solver:
+            print(solver.recaptcha_is_visible())
+            token = solver.solve_recaptcha(wait=True)
+        """
 
         
-        self.browser_page.screenshot(path="ss.png", full_page=True)
 
 
 class EmailConformation:
@@ -87,8 +134,6 @@ class EmailConformation:
         xpath = '//input[@class="adres-input"]/@value'
         email = selector.xpath(xpath).get()
 
-        self.browser_page.screenshot(path="email.png", full_page=True)
-
         return email
     
     def get_email(self) -> str:
@@ -103,25 +148,26 @@ class EmailConformation:
         print("\nWaiting for new emails...")
 
 
-
 def main():
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=False)
 
     #  EMAIL
     browser_page = browser.new_page()
 
-    email_handler = EmailConformation(browser_page)
-    email_handler.get_email()
+    #email_handler = EmailConformation(browser_page)
+    #email_handler.get_email()
 
     browser_page.close()
 
     #  SIGN UP
     browser_page = browser.new_page()
 
-    #signup_handler = PageHandler(browser_page)
-    #signup_handler.go_to_signup()
-    #signup_handler.input_data('abc@gmail.com')
+    signup_handler = PageHandler(browser_page)
+
+    signup_handler.go_to_signup()
+    signup_handler.input_data('h3elllo@gmail.com')
+    signup_handler.recaptcha()
 
     browser_page.close()
 
@@ -129,3 +175,5 @@ def main():
     playwright.stop()
 
 main()
+    
+
