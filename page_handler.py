@@ -59,7 +59,6 @@ class PageHandler:
         self.browser_page.screenshot(path="info.png")
 
 
-
     def recaptcha(self) -> None:
         time.sleep(5)
         html_content = self.browser_page.content()
@@ -89,50 +88,63 @@ class PageHandler:
         self.browser_page.fill('#g-recaptcha-response', captcha_response)
         self.browser_page.mouse.click(1,1)
 
-        #self.browser_page.query_selector('div[class="row content main_content"]').click(force=True)
-        
-        self.browser_page.query_selector('input[type="submit"]').click(force=True)
-        self.browser_page.wait_for_url('https://opencorporates.com/users/create')
-        
-        time.sleep(1000)
-
+        self.browser_page.wait_for_selector('input[type="submit"]').click(force=True)
+        self.browser_page.wait_for_selector('input[type="submit"]').click()
 
 
 class EmailConformation:
+    def __init__(self) -> None:
+        self.email = Email()
+        self.link = None
 
     def get_email(self) -> str:
+
+        self.email.register()
+        return self.email.address
+    
+    def get_link(self) -> str:
         def listener(message):
-            print("\nSubject: " + message['subject'])
-            print("Content: " + message['text'] if message['text'] else message['html'])
-        test = Email()
-        print(f'Domain: {test.domain}')
-        test.register()
-        print(f'"Email Adress: {str(test.address)}')
-        test.start(listener)
+            if message['text']:
+                text = message['text']
+                self.link = text[text.index('<')+1:text.index('>')]
+            
+        self.email.start(listener)
         print("\nWaiting for new emails...")
 
+        while not self.link:
+            time.sleep(0.5)
+        else:
+            self.email.stop()
+        return self.link
 
 
 def main():
     playwright = sync_playwright().start()
     browser = playwright.chromium.launch(headless=False)
 
-    #  EMAIL
-    browser_page = browser.new_page()
+    #  NEW EMAIL
+    email_handler = EmailConformation()
+    email_address = email_handler.get_email()
+    print(email_address)
 
-    #email_handler = EmailConformation(browser_page)
-    #email_handler.get_email()
-
-    browser_page.close()
-
-    #  SIGN UP
-    browser_page = browser.new_page()
+    #  SIGN UP INFO
+    browser_context = browser.new_context()
+    browser_page = browser_context.new_page()
 
     signup_handler = PageHandler(browser_page)
 
     signup_handler.go_to_signup()
-    signup_handler.input_data('sdjkfheoiruwoskj@yogieert.com')
+    signup_handler.input_data(email_address)
     signup_handler.recaptcha()
+
+    #  GET CONFIRMATION LINK
+    confirmation_link = email_handler.get_link()
+    print(confirmation_link)
+    browser_page.goto(confirmation_link, wait_until="load", timeout=60000)
+
+    print(browser_context.cookies(confirmation_link))
+
+    time.sleep(150)
 
     browser_page.close()
 
@@ -140,5 +152,3 @@ def main():
     playwright.stop()
 
 main()
-    
-
