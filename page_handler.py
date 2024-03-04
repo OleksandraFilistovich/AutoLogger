@@ -34,6 +34,7 @@ class PageHandler:
         button.get_by_text('Create an account').click()
 
     def input_data(self, email: str) -> None:
+        self.browser_page.wait_for_url('https://opencorporates.com/users/sign_up')
         name = email[:email.index('@')]
 
         letters = string.ascii_lowercase
@@ -54,88 +55,51 @@ class PageHandler:
         self.browser_page.eval_on_selector('.terms-conditions-checkbox',
                                            'el => el.removeAttribute("disabled")')
         check.check()
-
-        #  CheckBox anabled by scrolling
-        """
-        self.browser_page.query_selector('.terms-conditions-box').hover()
-        self.browser_page.mouse.wheel(0, 15000)
-
-        check = self.browser_page.query_selector('.terms-conditions-checkbox')
-        time.sleep(0.1)
-
-        if check.is_enabled():
-            check.check()
-        else:
-            time.sleep(0.5)
-            print('sleep')
-            check.check()
-        """
    
         self.browser_page.screenshot(path="info.png")
-    
+
+
+
     def recaptcha(self) -> None:
         time.sleep(5)
         html_content = self.browser_page.content()
         selector = Selector(text=html_content)
 
-        xpath = '//div[@class="g-recaptcha"]/@data-sitekey'
-        site_key = '6LfNR90SAAAAAMjuou-Bhh1HFLoa4BpoZttxz4RL'
+        xpath = '//div[@class="g-recaptcha "]/@data-sitekey'
+        site_key = selector.xpath(xpath).get()
+
         print(site_key)
         
+        captcha_frame = self.browser_page.wait_for_selector('iframe[src*="recaptcha/api2"]')
+        captcha_frame_content = captcha_frame.content_frame()
+        captcha_checkbox = captcha_frame_content.wait_for_selector('#recaptcha-anchor')
+        captcha_checkbox.click()
+
+
         solver = TwoCaptcha('f35d8c9b68dd7ae711093739a6bcd676')
         result = solver.recaptcha(sitekey=site_key,
                                   url='https://opencorporates.com/users/sign_up')
-        print(result['code'])
-
-
-
-
-        captcha_response = self.browser_page.query_selector('.g-recaptcha-response')
-        
-        self.browser_page.eval_on_selector('.g-recaptcha-response',
-                                           f'node => node.value = {result["code"]}')
-        time.sleep(10)
-        self.browser_page.screenshot(path="captcha.png")
-
-        """
-        self.browser_page.mouse.wheel(0, 15000)
-
-        self.browser_page.locator('[value="Register new account"]').click()
-        button = self.browser_page.query_selector('.btn-primary')
-        button.click()
-
-        xpath = '//label[@id="recaptcha-anchor-label"]/text()'
-        cap = selector.xpath(xpath).get()
-        print(cap)
-        
-        self.browser_page.query_selector('name=commit').click()
-        time.sleep(5)
-        self.browser_page.screenshot(path="captcha.png")
-        with recaptchav2.SyncSolver(self.browser_page) as solver:
-            print(solver.recaptcha_is_visible())
-            token = solver.solve_recaptcha(wait=True)
-        """
+        captcha_response = result['code']
+        print(captcha_response)
 
         
+        self.browser_page.eval_on_selector('#g-recaptcha-response',
+                                           'el => el.removeAttribute("style")')
+        
+        self.browser_page.fill('#g-recaptcha-response', captcha_response)
+        self.browser_page.mouse.click(1,1)
+
+        #self.browser_page.query_selector('div[class="row content main_content"]').click(force=True)
+        
+        self.browser_page.query_selector('input[type="submit"]').click(force=True)
+        self.browser_page.wait_for_url('https://opencorporates.com/users/create')
+        
+        time.sleep(1000)
+
 
 
 class EmailConformation:
-    def __init__(self, browser_page: Page) -> None:
-        self.browser_page = browser_page
-    
-    def get_email_(self) -> str:
-        print('page go')
-        time.sleep(10)
-        self.browser_page.goto(URL_EMAIL, wait_until="load", timeout=60000)
 
-        html_content = self.browser_page.content()
-        selector = Selector(text=html_content)
-
-        xpath = '//input[@class="adres-input"]/@value'
-        email = selector.xpath(xpath).get()
-
-        return email
-    
     def get_email(self) -> str:
         def listener(message):
             print("\nSubject: " + message['subject'])
@@ -146,6 +110,7 @@ class EmailConformation:
         print(f'"Email Adress: {str(test.address)}')
         test.start(listener)
         print("\nWaiting for new emails...")
+
 
 
 def main():
@@ -166,7 +131,7 @@ def main():
     signup_handler = PageHandler(browser_page)
 
     signup_handler.go_to_signup()
-    signup_handler.input_data('h3elllo@gmail.com')
+    signup_handler.input_data('sdjkfheoiruwoskj@yogieert.com')
     signup_handler.recaptcha()
 
     browser_page.close()
