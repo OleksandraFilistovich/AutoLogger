@@ -19,7 +19,7 @@ cache_0 = Cache(0)
 
 def main():
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=False)
 
     #  NEW EMAIL
     email_handler = EmailConformation()
