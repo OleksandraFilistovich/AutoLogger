@@ -15,23 +15,14 @@ class Cache:
                                password=password, decode_responses=True)
         self.pipeline = self.red.pipeline()
 
-    def add_info(self, tasks: list[int]) -> None:
-        """Adds given tasks to queue."""
-        for task in tasks:
-            self.pipeline.lpush('queue_tasks', task)
-        self.pipeline.execute()
-    
-    def get_tasks(self, amount: int) -> list[str]:
-        """Returns set amount of tasks."""
-        tasks = self.red.rpop(name='queue_tasks', count=amount)
-        return tasks
-    
-    def add_results(self, results: list[dict]) -> None:
+    def add_results(self, email: str, results: list) -> None:
         """Stores cookies info."""
+        ind = -1
         for result in results:
+            ind += 1
             for key in result.keys():
-                name = result['email']
-                self.pipeline.hset(name=name, key=key, value=result[key])
+                key_name = f'{key}_{ind}'
+                self.pipeline.hset(name=email, key=key_name, value=str(result[key]))
         self.pipeline.execute()
     
     def get_results(self) -> dict:
@@ -40,15 +31,15 @@ class Cache:
         Deletes all tasks from which cars been collected.
         """
         results = {}
-        cars = self.red.keys()
+        cookies = self.red.keys()
 
-        for car in cars:
-            results[car] = {}
-            keys =  self.red.hkeys(car)
+        for cookie in cookies:
+            results[cookie] = {}
+            keys =  self.red.hkeys(cookie)
             
             for key in keys:
-                results[car][key] = self.red.hget(car, key)
-            self.pipeline.delete(car)
+                results[cookie][key] = self.red.hget(cookie, key)
+            self.pipeline.delete(cookie)
 
         self.pipeline.execute()        
         return results

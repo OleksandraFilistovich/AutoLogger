@@ -7,6 +7,3 @@ playwright
 mailtm
 
 2captcha-python
-#playwright-recaptcha
-#ffprobe
-#ffmpeg
