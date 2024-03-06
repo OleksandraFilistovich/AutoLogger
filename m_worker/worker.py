@@ -21,12 +21,13 @@ LOGGER = get_logger("Worker")
 cache_0 = Cache(0)
 
 class PageHandler:
-    """Class for scrapping used cars info. Synchronous."""
+    """Class for handling sign up pages. Synchronous."""
 
     def __init__(self, browser_page: Page) -> None:
         self.browser_page = browser_page
 
     def go_to_signup(self) -> None:
+        """Go from home page to sign up one."""
         LOGGER.info('Go to registration page')
         self.browser_page.goto(URL_SIGNUP, wait_until="load", timeout=60000)
 
@@ -37,6 +38,7 @@ class PageHandler:
         button.get_by_text('Create an account').click()
 
     def input_data(self, email: str) -> None:
+        """Input registration data."""
         LOGGER.info('Start input data')
         self.browser_page.wait_for_url('https://opencorporates.com/users/sign_up')
         name = email[:email.index('@')]
@@ -62,6 +64,7 @@ class PageHandler:
 
 
     def recaptcha(self) -> None:
+        """reCaptcha v2 and submit."""
         time.sleep(5)
         html_content = self.browser_page.content()
         selector = Selector(text=html_content)
@@ -94,16 +97,18 @@ class PageHandler:
 
 
 class EmailConformation:
+    """Class for handling temporary email."""
     def __init__(self) -> None:
         self.email = Email()
         self.link = None
 
     def get_email(self) -> str:
-
+        """Get new adress."""
         self.email.register()
         return self.email.address
     
     def get_link(self) -> str:
+        """Listens to emails and saves confirmation link."""
         def listener(message):
             if message['text']:
                 text = message['text']

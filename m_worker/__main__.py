@@ -18,6 +18,7 @@ cache_0 = Cache(0)
 
 
 def main():
+    """Logging and confirmation proccess."""
     playwright = sync_playwright().start()
     browser = playwright.chromium.launch(headless=False)
 

@@ -27,8 +27,7 @@ class Cache:
     
     def get_results(self) -> dict:
         """
-        Returns all stored cars data in dict {index:car_info_as_dict}.
-        Deletes all tasks from which cars been collected.
+        Returns all stored cookies info.
         """
         results = {}
         cookies = self.red.keys()
